@@ -126,7 +126,7 @@ prompt_command () {
     local BranchColor="$White" BranchName
     #local DivergenceColor Locality Ahead Behind
     local ModeColor Mode
-    local IgnoredColor Ignored
+    local IgnoredColor="$Yellow" Ignored
     local Separator
     local CleanColor Clean
     local StagedColor Staged
@@ -137,13 +137,13 @@ prompt_command () {
     local GitPromptEnd
 
     local repo_info rev_parse_exit_code
-    repo_info="$(git rev-parse \
+    local repo_info="$(git rev-parse \
         --git-dir \
         --is-inside-git-dir \
         --is-bare-repository \
         --is-inside-work-tree \
         --short HEAD 2>/dev/null)"
-    rev_parse_exit_code="$?"
+    local rev_parse_exit_code="$?"
 
     if [ "$repo_info" ]; then
         local short_sha
@@ -220,7 +220,9 @@ prompt_command () {
                 BranchName="GIT_DIR!"
             fi
         elif [ "true" = "$is_inside_worktree" ]; then
-            if [ $(git check-ignore -q .) ]; then
+            git check-ignore -q .
+            local ignore_exit_code=$?
+            if [ $ignore_exit_code -eq 0 ]; then
                 Ignored=' [directory ignored by git]'
             fi
 
@@ -317,3 +319,13 @@ export P4CONFIG=.p4config
 export EDITOR="/usr/local/bin/mate -w"
 export P4EDITOR=$EDITOR
 export P4DIFF=opendiff
+export FIGNORE=$FIGNORE:DS_Store
+export BAZEL_COMPLETION_ALLOW_TESTS_FOR_RUN=true
+
+source ~/repos/ishem/google3/tools/osx/blaze/bazel-complete.bash
+function _git5_trampoline() {
+  # Must be in a subshell.
+  COMPREPLY=( $(source ~/git5_bash_completion_helper.sh) )
+}
+
+complete -o bashdefault -o default -o nospace -F _git5_trampoline git5 2>/dev/null || complete -o default -o nospace -F _git5_trampoline git5
